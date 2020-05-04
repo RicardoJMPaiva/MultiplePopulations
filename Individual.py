@@ -1,9 +1,9 @@
 
 
 class Individual:
-    def __init__(self, genotype):
+    def __init__(self, genotype, phenotype):
         self.genotype = genotype
-        self.phenotype = None
+        self.phenotype = phenotype
         self.fitness = None
 
     def get_fitness(self):
@@ -14,3 +14,6 @@ class Individual:
 
     def get_genotype(self):
         return self.genotype
+
+    def get_phenotype(self):
+        return self.phenotype
