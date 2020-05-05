@@ -5,8 +5,7 @@ import copy
 import math
 import copy
 
-# FIXME: ver se o problema e maximizacao ou minimizacao
-# funcoes c logs
+# TODO funcoes c logs
 # metodos
 # problema: Knapsack
 # TODO ao atualizar o problema, atualizar nos parametros, ou mandar como argumento
@@ -105,34 +104,103 @@ def worst_replacement(population):
     for _ in range(params["INDIVIDUALS_REPLACE"]):
         gen = generate_genotype()
         new_population.append(Individual(gen, genotype_to_fenotype(gen)))
-        # TODO atribuir fitness aos novos individuos
-    # TODO checkar se sai com o tamanho certo
-    # TODO checkar que removemos realmente os piores
     fitness(new_population)
     return new_population
 
+def select_random_idx(pop):
+    ix = []
+    while len(ix) < params["INDIVIDUALS_EXCHANGE"]:
+        ind = random.randint(0,len(pop) - 1)
+        if ind not in ix:
+            ix.append(ind)
+    ix.sort(reverse=True)
+    return ix
+
+def exchange_random(pop1,pop2):
+    # trocar random
+    ix1 = select_random_idx(pop1)
+    ix2 = select_random_idx(pop2)
+    ind1 = []
+    ind2 = []
+    for index in ix1:
+        ind1.append(pop1[index])
+        del(pop1[index])
+
+    for index in ix2:
+        ind2.append(pop2[index])
+        del(pop2[index])
+ 
+    for i in range( params["INDIVIDUALS_EXCHANGE"]):
+        pop1.append(ind2[i])
+        pop2.append(ind1[i])
+    return pop1, pop2
+
+def exchange_worst(pop1,pop2):
+    ind1 = pop1[-params["INDIVIDUALS_EXCHANGE"]:]
+    pop1[-params["INDIVIDUALS_EXCHANGE"]:] = pop2[-params["INDIVIDUALS_EXCHANGE"]:]
+    pop2[-params["INDIVIDUALS_EXCHANGE"]:] = ind1
+
+    return pop1,pop2
+
+def exchange_best(pop1,pop2):
+    ind1 = pop1[:params["INDIVIDUALS_EXCHANGE"]]
+    pop1[:params["INDIVIDUALS_EXCHANGE"]] = pop2[:params["INDIVIDUALS_EXCHANGE"]]
+    pop2[:params["INDIVIDUALS_EXCHANGE"]] = ind1
+    return pop1,pop2
+
+
+def change_populations(pop1, pop2):
+    pop1.sort(key=lambda x: x.get_fitness(),reverse=True)
+    pop2.sort(key=lambda x: x.get_fitness(),reverse=True)
+
+    if params["EXCHANGE_METHOD"] == "random":
+        pop1,pop2 = exchange_random(pop1,pop2)
+    elif params["EXCHANGE_METHOD"] == "worst":
+        pop1,pop2 = exchange_worst(pop1,pop2)
+    elif params["EXCHANGE_METHOD"] == "best":
+        pop1,pop2 = exchange_best(pop1,pop2)
+    else:
+        print("ERROR: Any exchange population method choosed")
+    return pop1, pop2
+
+
+
 def main():
     population = generate_population(experimentation["PROBLEM"])
+    population2 = generate_population(experimentation["PROBLEM"])
     best = None
-    for _ in range(params["NR_GENERATIONS"]):
+    migration_flag = True
+    for i in range(params["NR_GENERATIONS"]):
+        if params["METHOD"] > 0:
+            # each 2 generations
+            if params["MIGRATION"] == 2:
+                migration_flag = not migration_flag
+            elif params["MIGRATION"] == 3:
+                if i % 5 == 0:
+                    migration_flag = True
+                else:
+                    migration_flag = False
+
         problem = experimentation["PROBLEM"]
         # TODO variar capacidade a cada geracao
         fitness(population)
+        if migration_flag:
+            if params["METHOD"] == 1:
+                fitness(population2)
+                population, population2 = change_populations(population, population2)
+                population2.sort(key=lambda x: x.get_fitness(),reverse=True)
+                best2 = copy.deepcopy(population2[0])
+            elif params["METHOD"] == 2:
+                population = worst_replacement(population)
 
         population.sort(key=lambda x: x.get_fitness(),reverse=True)
         best = copy.deepcopy(population[0])
-
-        if params["METHOD"] == 2:
-            # TODO ver onde ficar melhor
-            # TODO flag c a frequencia de imigracao
-            population = worst_replacement(population)
-
         # Elitism
         new_population = population[:params['ELITISM']]
+        new_population2 = population2[:params['ELITISM']]
         while len(new_population) < params['NR_INDIVIDUALS']:
             # TOURNAMENT
             new_ind = tournament(population)
-            # FIXME ver a seed
             # mutation
             if random.random() < params["PROB_MUTATION"]:
                 new_ind = mutation(new_ind)
@@ -140,12 +208,31 @@ def main():
             if random.random() < params["PROB_CROSSOVER"]:
                 new_ind2 = tournament(population)
                 # retornar 1 ou 2
+                # FIXME: as vezes a pop fica com mais 1
                 new_ind, new_ind2 = crossover(new_ind, new_ind2)
                 new_population.append(new_ind2)
 
             new_population.append(new_ind)
-        print(best.get_fitness())
+
+            if params["METHOD"] == 1:
+                new_ind = tournament(population2)
+                # mutation
+                if random.random() < params["PROB_MUTATION"]:
+                    new_ind = mutation(new_ind)
+                # crossover
+                if random.random() < params["PROB_CROSSOVER"]:
+                    new_ind2 = tournament(population2)
+                    # retornar 1 ou 2
+                    new_ind, new_ind2 = crossover(new_ind, new_ind2)
+                    new_population2.append(new_ind2)
+
+                new_population2.append(new_ind)
+
+        print("POP 1: ", best.get_fitness())
         population = new_population
+        if params["METHOD"] == 1:
+            print("POP 2: ", best2.get_fitness())
+            population2 = new_population2
 
 if __name__ == "__main__":
     for _ in range(experimentation["NR_EXP"]):
