@@ -4,8 +4,9 @@ import random
 import copy
 import math
 import copy
+import json
+import os
 
-# TODO funcoes c logs
 # metodos
 # problema: Knapsack
 # TODO ao atualizar o problema, atualizar nos parametros, ou mandar como argumento
@@ -163,13 +164,32 @@ def change_populations(pop1, pop2):
         print("ERROR: Any exchange population method choosed")
     return pop1, pop2
 
+def save_population(l, population):
+    pop = []
+    for ind in population:
+        pop.append(ind.get_fitness())
+    l.append(pop)
+    return l
 
+def save(exp, l, l2 = None):
+    if not os.path.exists(experimentation["SAVE_POP"]):
+        os.makedirs(experimentation["SAVE_POP"],  exist_ok=True)
+    open('%s/exp%d.json' % (experimentation["SAVE_POP"],exp), 'w').write(json.dumps(l))
+    if l2:
+        open('%s/exp%d.json' % (experimentation["SAVE_POP"],exp), 'w').write(json.dumps(l2))
 
-def main():
+def main(exp):
     population = generate_population(experimentation["PROBLEM"])
-    population2 = generate_population(experimentation["PROBLEM"])
+    l1=[]
+    if params["METHOD"] == 1:
+        population2 = generate_population(experimentation["PROBLEM"])
+        f2 = open(experimentation['SAVE_FILE2'],"a")
+        l2 = []
+
     best = None
     migration_flag = True
+    f = open(experimentation['SAVE_FILE'],"a")
+
     for i in range(params["NR_GENERATIONS"]):
         if params["METHOD"] > 0:
             # each 2 generations
@@ -184,12 +204,14 @@ def main():
         problem = experimentation["PROBLEM"]
         # TODO variar capacidade a cada geracao
         fitness(population)
+        l1 = save_population(l1,population)
         if migration_flag:
             if params["METHOD"] == 1:
                 fitness(population2)
                 population, population2 = change_populations(population, population2)
                 population2.sort(key=lambda x: x.get_fitness(),reverse=True)
                 best2 = copy.deepcopy(population2[0])
+                l2 = save_population(l2, population2)
             elif params["METHOD"] == 2:
                 population = worst_replacement(population)
 
@@ -230,10 +252,29 @@ def main():
 
         print("POP 1: ", best.get_fitness())
         population = new_population
+        s = '\n%d,%f' %(i,best.get_fitness())
+        f.write(s)
         if params["METHOD"] == 1:
             print("POP 2: ", best2.get_fitness())
             population2 = new_population2
+            s = '\n%d,%f' %(i,best2.get_fitness())
+            f2.write(s)
+    
+    if params["METHOD"] == 1:
+        save(exp,l1,l2)
+    else:
+        save(exp,l1)
+
+    f.close()
+    f2.close()
 
 if __name__ == "__main__":
-    for _ in range(experimentation["NR_EXP"]):
-        main()
+    f = open(experimentation['SAVE_FILE'],"w")
+    f.write("generation,fitness")
+    f.close()
+    if params["METHOD"] == 1:
+        f2 = open(experimentation['SAVE_FILE2'],"w")
+        f2.write("generation,fitness")
+        f2.close()
+    for exp in range(experimentation["NR_EXP"]):
+        main(exp)
