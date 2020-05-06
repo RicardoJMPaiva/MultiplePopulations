@@ -17,10 +17,12 @@ params = {
     "MIGRATION_N": 5,
 }
 
-
+pasta = "random/"
 experimentation = {
-    "NR_EXP": 1,
-    "SAVE_FILE": "save/logs.txt",
+    "NR_EXP": 2,
+    "SAVE_FILE": "save/" + pasta + "best.txt",
+    "SAVE_FILE2": "save/" + pasta + "best2.txt",
+    "SAVE_POP": "save/" + pasta + "log/",
     "PROBLEM": generate_weak_cor(),
     "FITNESS": "quadratic"    # linear, quadratic, zero
 }
