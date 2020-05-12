@@ -1,10 +1,11 @@
 import random
+import json
 # knapsack
 
 kp = {
     "V": 10,
     "R": 5,
-    "NR_ITEMS": 100,    # 100, 250, 500
+    "NR_ITEMS": 250,    # 100, 250, 500
     # "C": 20,    # 2 * v or 0.5 * sum (weights)
 }
 
@@ -31,3 +32,14 @@ def generate_strong_cor():
     capacity = int(0.5 * sum(weights))
     return {'weights':weights, 'values':values, 'capacity': capacity}
 
+def perturbation():
+    kp["N"] = kp["N"] + 1
+    if kp["N"] > (len(kp["NR_ITEMS"]) - 1):
+        kp["N"] = 0
+
+
+if __name__ == "__main__":
+    datasets = []
+    for _ in range(10):
+        datasets.append(generate_weak_cor())
+    open("datasets/dataset1.json", 'w').write(json.dumps(datasets))

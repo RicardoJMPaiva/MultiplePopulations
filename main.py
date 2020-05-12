@@ -9,7 +9,15 @@ import os
 
 # metodos
 # problema: Knapsack
-# TODO ao atualizar o problema, atualizar nos parametros, ou mandar como argumento
+"""
+- variar a cada 10 geracoes (5)
+- varia, alterando o numero de items 100,250,500 'perturbacao'
+- duvida : devemos usar os mesmos parametros no algoritmo em todos os testes ?
+- variar o tipo de mutacao entre populacoes ? - ate pode interessar
+    - diferentes populacoes, e diferentes formas de evolucao (mutacao e xover diferentes)
+
+- problemas diferentes para cada populacao ? - pode n fazer mt sentido
+"""
 
 def generate_genotype():
     gen = []
@@ -83,7 +91,7 @@ def crossover(ind1, ind2):
     new_ind2 = Individual(gen2, genotype_to_fenotype(gen2))
     return new_ind1, new_ind2
 
-def generate_population(problem):
+def generate_population():
     population = []
     for _ in range(params["NR_INDIVIDUALS"]):
         gen = generate_genotype()
@@ -179,30 +187,34 @@ def save(exp, l, l2 = None):
         open('%s/exp%d.json' % (experimentation["SAVE_POP"],exp), 'w').write(json.dumps(l2))
 
 def main(exp):
-    population = generate_population(experimentation["PROBLEM"])
+    population = generate_population()
     l1=[]
     if params["METHOD"] == 1:
-        population2 = generate_population(experimentation["PROBLEM"])
+        population2 = generate_population()
         f2 = open(experimentation['SAVE_FILE2'],"a")
         l2 = []
 
     best = None
     migration_flag = True
     f = open(experimentation['SAVE_FILE'],"a")
-
+    experimentation["PERTUB"] = 0
     for i in range(params["NR_GENERATIONS"]):
+        print(" ----- GEN %s ------" % i)
         if params["METHOD"] > 0:
             # each 2 generations
             if params["MIGRATION"] == 2:
                 migration_flag = not migration_flag
-            elif params["MIGRATION"] == 3:
-                if i % 5 == 0:
+            elif params["MIGRATION"] > 3:
+                if i % params["MIGRATION"] == 0:
                     migration_flag = True
                 else:
                     migration_flag = False
-
-        problem = experimentation["PROBLEM"]
-        # TODO variar capacidade a cada geracao
+        # FIXME verificar que funciona, # perturbacao kp dinamico
+        if (i+1) % params["PERTURBATION"] == 0 and i + 1 < params["NR_GENERATIONS"] :
+            print("\t\t***")
+            experimentation["PERTUB"] += 1
+            experimentation["PROBLEM"] = experimentation["PROBLEM_DATASET"][experimentation["PERTUB"]]
+            
         fitness(population)
         l1 = save_population(l1,population)
         if migration_flag:
@@ -212,6 +224,7 @@ def main(exp):
                 population2.sort(key=lambda x: x.get_fitness(),reverse=True)
                 best2 = copy.deepcopy(population2[0])
                 l2 = save_population(l2, population2)
+                new_population2 = population2[:params['ELITISM']]
             elif params["METHOD"] == 2:
                 population = worst_replacement(population)
 
@@ -219,7 +232,6 @@ def main(exp):
         best = copy.deepcopy(population[0])
         # Elitism
         new_population = population[:params['ELITISM']]
-        new_population2 = population2[:params['ELITISM']]
         while len(new_population) < params['NR_INDIVIDUALS']:
             # TOURNAMENT
             new_ind = tournament(population)
@@ -230,7 +242,7 @@ def main(exp):
             if random.random() < params["PROB_CROSSOVER"]:
                 new_ind2 = tournament(population)
                 # retornar 1 ou 2
-                # FIXME: as vezes a pop fica com mais 1
+                # FIXME as vezes a pop fica com mais 1
                 new_ind, new_ind2 = crossover(new_ind, new_ind2)
                 new_population.append(new_ind2)
 
@@ -262,13 +274,15 @@ def main(exp):
     
     if params["METHOD"] == 1:
         save(exp,l1,l2)
+        f2.close()
     else:
         save(exp,l1)
-
     f.close()
-    f2.close()
 
 if __name__ == "__main__":
+    if not os.path.exists(experimentation["SAVE_FOLDER"]):
+        os.makedirs(experimentation["SAVE_FOLDER"],  exist_ok=True)
+
     f = open(experimentation['SAVE_FILE'],"w")
     f.write("generation,fitness")
     f.close()
