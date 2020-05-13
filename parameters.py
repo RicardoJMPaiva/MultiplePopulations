@@ -12,15 +12,14 @@ params = {
     "INDIVIDUALS_REPLACE": 3,
     "INDIVIDUALS_EXCHANGE": 5,
     "EXCHANGE_METHOD": "random",      # worst, best, random
-    "MIGRATION": 1,      # 1 - always, 2 - each 2 generations, 3 - each X gen, a partir de X
-    "MIGRATION_N": 5,
+    "MIGRATION": 2,      # 1 - always, 2 - each 2 generations, 3 - each X gen, a partir de X
     "PERTURBATION": 10, # frequencia each 10 generations
 }
 
 with open('datasets/dataset1.json') as f:
   data = json.load(f)
 
-pasta = "save/random/"
+pasta = "save/A/0.05_par_random/"
 experimentation = {
     "NR_EXP": 30,
     "SAVE_FOLDER": pasta,

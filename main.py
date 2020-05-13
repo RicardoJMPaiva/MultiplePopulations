@@ -217,16 +217,16 @@ def main(exp):
             
         fitness(population)
         l1 = save_population(l1,population)
-        if migration_flag:
-            if params["METHOD"] == 1:
-                fitness(population2)
+        if params["METHOD"] == 1:
+            fitness(population2)
+            if migration_flag:
                 population, population2 = change_populations(population, population2)
-                population2.sort(key=lambda x: x.get_fitness(),reverse=True)
-                best2 = copy.deepcopy(population2[0])
-                l2 = save_population(l2, population2)
-                new_population2 = population2[:params['ELITISM']]
-            elif params["METHOD"] == 2:
-                population = worst_replacement(population)
+            population2.sort(key=lambda x: x.get_fitness(),reverse=True)
+            best2 = copy.deepcopy(population2[0])
+            l2 = save_population(l2, population2)
+            new_population2 = population2[:params['ELITISM']]
+        if params["METHOD"] == 2 and migration_flag:
+            population = worst_replacement(population)
 
         population.sort(key=lambda x: x.get_fitness(),reverse=True)
         best = copy.deepcopy(population[0])
