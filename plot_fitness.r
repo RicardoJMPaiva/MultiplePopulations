@@ -25,6 +25,6 @@ for (folder in l) {
     theme_minimal() +
     theme(legend.position="top") +
     scale_x_continuous(breaks = seq(0, 99, 10)) +
-    # ylim(500,1000) +
+    ylim(750,950) +
     labs(x = "Generations", y = "Fitness", title = "Multiple populations"))
 }
