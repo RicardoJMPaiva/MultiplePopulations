@@ -8,7 +8,7 @@
     - necessary libraries: random, copy, math, json, os, pandas, numpy, matplotlib, scipy, 
 - R
 
-# FAQ
+## FAQ
 
 ### 1 - How to run the code
 
