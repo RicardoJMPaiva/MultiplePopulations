@@ -1,4 +1,6 @@
-
+"""
+Individual representation
+"""
 
 class Individual:
     def __init__(self, genotype, phenotype):

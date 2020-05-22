@@ -1,31 +1,28 @@
+"""
+    Multi-population and Random Immigrants algorithms
+    Evolutionary Computation, 2020, UC, DEI
+    Master of Informatics Engineering
+"""
+__author__ = 'Jessica Cunha, Ricardo Paiva'
+__date__ = 'May 2020'
+
 from parameters import *
 from Individual import *
 import random
 import copy
 import math
-import copy
 import json
 import os
 
-# metodos
-# problema: Knapsack
-"""
-- variar a cada 10 geracoes (5)
-- varia, alterando o numero de items 100,250,500 'perturbacao'
-- duvida : devemos usar os mesmos parametros no algoritmo em todos os testes ?
-- variar o tipo de mutacao entre populacoes ? - ate pode interessar
-    - diferentes populacoes, e diferentes formas de evolucao (mutacao e xover diferentes)
-
-- problemas diferentes para cada populacao ? - pode n fazer mt sentido
-"""
-
 def generate_genotype():
+    """ Function that genarates the genotype of the individual """
     gen = []
     for _ in range(params["SIZE_GENOTYPE"]):
         gen.append(random.randint(0,1))
     return gen
 
-def genotype_to_fenotype(genotype):
+def genotype_to_phenotype(genotype):
+    """ Function that does the mapping of the genotype into the phenotype"""
     problem = experimentation["PROBLEM"]
     phenotype = []
     for i in range(len(genotype)):
@@ -34,6 +31,7 @@ def genotype_to_fenotype(genotype):
     return phenotype
 
 def fitness(population):
+    """ Function that calculates the fitness of the whole population"""
     problem = experimentation["PROBLEM"]
     capacity = problem["capacity"]
     for ind in population:
@@ -58,17 +56,18 @@ def fitness(population):
                 print("FITNESS FUNCTION DOESNT EXIST")
         ind.set_fitness(fitness)
 def mutation(ind):
-    # corre o fenotipo
+    " Random resetting mutation"
     gen = copy.deepcopy(ind.get_genotype())
 
     for i in range(params['SIZE_GENOTYPE']):
         if random.random() < params['PROB_MUTATION']:
             gen[i] = random.randint(0,1)
-    fen = genotype_to_fenotype(gen)
+    fen = genotype_to_phenotype(gen)
     new_ind = Individual(gen, fen)
     return new_ind
 
 def crossover(ind1, ind2):
+    """ N-point crossover """
     gen1 = copy.deepcopy(ind1.get_genotype())
     gen2 = copy.deepcopy(ind2.get_genotype())
     cuts = []
@@ -87,36 +86,44 @@ def crossover(ind1, ind2):
         if partnerGenotype:
             gen1[start:cuts[i]] = ind2.get_genotype()[start:cuts[i]]
             gen2[start:cuts[i]] = ind1.get_genotype()[start:cuts[i]]
-    new_ind1 = Individual(gen1, genotype_to_fenotype(gen1))
-    new_ind2 = Individual(gen2, genotype_to_fenotype(gen2))
+    new_ind1 = Individual(gen1, genotype_to_phenotype(gen1))
+    new_ind2 = Individual(gen2, genotype_to_phenotype(gen2))
     return new_ind1, new_ind2
 
 def generate_population():
+    """ Function to generate the population"""
     population = []
     for _ in range(params["NR_INDIVIDUALS"]):
         gen = generate_genotype()
-        fen = genotype_to_fenotype(gen)
+        fen = genotype_to_phenotype(gen)
         ind = Individual(gen, fen)
         population.append(ind)
     return population
 
 def tournament(population):
+    """ Tournament selection """
     pool = random.sample(population, params['TOURNAMENT'])
     pool.sort(key=lambda i: i.get_fitness(),reverse=True)
-
     return copy.deepcopy(pool[0])
 
 def worst_replacement(population):
+    """
+    Random immigrants function
+    Replaces the worst individuals of the population by new randomly generated
+    """
     population.sort(key=lambda x: x.get_fitness(),reverse=True)
     total = len(population) - params["INDIVIDUALS_REPLACE"]
     new_population = population[:total]
     for _ in range(params["INDIVIDUALS_REPLACE"]):
         gen = generate_genotype()
-        new_population.append(Individual(gen, genotype_to_fenotype(gen)))
+        new_population.append(Individual(gen, genotype_to_phenotype(gen)))
     fitness(new_population)
     return new_population
 
 def select_random_idx(pop):
+    """
+    Auxiliar function to select random individuals
+    """
     ix = []
     while len(ix) < params["INDIVIDUALS_EXCHANGE"]:
         ind = random.randint(0,len(pop) - 1)
@@ -126,7 +133,10 @@ def select_random_idx(pop):
     return ix
 
 def exchange_random(pop1,pop2):
-    # trocar random
+    """
+    Auxiliary function for the Multi-populations algorithm
+    Exchange random individual's method
+    """
     ix1 = select_random_idx(pop1)
     ix2 = select_random_idx(pop2)
     ind1 = []
@@ -145,6 +155,10 @@ def exchange_random(pop1,pop2):
     return pop1, pop2
 
 def exchange_worst(pop1,pop2):
+    """
+    Auxiliary function for the Multi-populations algorithm
+    Exchange worst individual's method
+    """
     ind1 = pop1[-params["INDIVIDUALS_EXCHANGE"]:]
     pop1[-params["INDIVIDUALS_EXCHANGE"]:] = pop2[-params["INDIVIDUALS_EXCHANGE"]:]
     pop2[-params["INDIVIDUALS_EXCHANGE"]:] = ind1
@@ -152,6 +166,10 @@ def exchange_worst(pop1,pop2):
     return pop1,pop2
 
 def exchange_best(pop1,pop2):
+    """
+    Auxiliary function for the Multi-populations algorithm
+    Exchange best individual's method
+    """
     ind1 = pop1[:params["INDIVIDUALS_EXCHANGE"]]
     pop1[:params["INDIVIDUALS_EXCHANGE"]] = pop2[:params["INDIVIDUALS_EXCHANGE"]]
     pop2[:params["INDIVIDUALS_EXCHANGE"]] = ind1
@@ -159,6 +177,9 @@ def exchange_best(pop1,pop2):
 
 
 def change_populations(pop1, pop2):
+    """
+    Function for the Multi-populations algorithm
+    """
     pop1.sort(key=lambda x: x.get_fitness(),reverse=True)
     pop2.sort(key=lambda x: x.get_fitness(),reverse=True)
 
@@ -173,6 +194,9 @@ def change_populations(pop1, pop2):
     return pop1, pop2
 
 def save_population(l, population):
+    """
+    Auxiliary function to save all individual's fitness
+    """
     pop = []
     for ind in population:
         pop.append(ind.get_fitness())
@@ -180,6 +204,9 @@ def save_population(l, population):
     return l
 
 def save(exp, l, l2 = None):
+    """
+    Auxiliary function to save all individuals from all generations fitness
+    """
     if not os.path.exists(experimentation["SAVE_POP"]):
         os.makedirs(experimentation["SAVE_POP"],  exist_ok=True)
     open('%s/exp%d.json' % (experimentation["SAVE_POP"],exp), 'w').write(json.dumps(l))
@@ -209,7 +236,6 @@ def main(exp):
                     migration_flag = True
                 else:
                     migration_flag = False
-        # FIXME verificar que funciona, # perturbacao kp dinamico
         if (i+1) % params["PERTURBATION"] == 0 and i + 1 < params["NR_GENERATIONS"] :
             print("\t\t***")
             experimentation["PERTUB"] += 1
@@ -233,7 +259,6 @@ def main(exp):
         # Elitism
         new_population = population[:params['ELITISM']]
         while len(new_population) < params['NR_INDIVIDUALS']:
-            # TOURNAMENT
             new_ind = tournament(population)
             # mutation
             if random.random() < params["PROB_MUTATION"]:
@@ -241,11 +266,8 @@ def main(exp):
             # crossover
             if random.random() < params["PROB_CROSSOVER"]:
                 new_ind2 = tournament(population)
-                # retornar 1 ou 2
-                # FIXME as vezes a pop fica com mais 1
                 new_ind, new_ind2 = crossover(new_ind, new_ind2)
                 new_population.append(new_ind2)
-
             new_population.append(new_ind)
 
             if params["METHOD"] == 1:
@@ -256,10 +278,8 @@ def main(exp):
                 # crossover
                 if random.random() < params["PROB_CROSSOVER"]:
                     new_ind2 = tournament(population2)
-                    # retornar 1 ou 2
                     new_ind, new_ind2 = crossover(new_ind, new_ind2)
                     new_population2.append(new_ind2)
-
                 new_population2.append(new_ind)
 
         print("POP 1: ", best.get_fitness())
@@ -273,10 +293,12 @@ def main(exp):
             f2.write(s)
     
     if params["METHOD"] == 1:
-        save(exp,l1,l2)
+        # COMMENT THIS TO AVOID SAVING ALL INDIVIDUALS FITNESS
+        # save(exp,l1,l2)
         f2.close()
-    else:
-        save(exp,l1)
+    # COMMENT THIS TO AVOID SAVING ALL INDIVIDUALS FITNESS
+    # else:
+    #     save(exp,l1)
     f.close()
 
 if __name__ == "__main__":
