@@ -1,4 +1,5 @@
-# User Manual
+# Comparison between Multi-Population Migration and Random Immigrants Algorithms
+This project was made for the Evolutionary Computation class of the Informatics Engineering Master of the University of Coimbra
 ## Authors
 - Jessica Cunha, 2016239495, jessicac@student.uc.pt
 - Ricardo Paiva, 2016253100, rjpaiva@student.uc.pt
